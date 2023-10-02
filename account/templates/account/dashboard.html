@@ -35,10 +35,10 @@
         <h5><b>ORDERS:</b></h5>
         <hr>
         <div class="card card-body">
-            <!-- <a class="btn btn-primary btn-sm btn-block" href="{% url 'create_order' %}">Create Order </a> -->
-                <table class="table table-sm">
+             <table class="table table-sm">
                     <tr>
                         <th>Product</th>
+                        <th>Customer</th>
                         <th>Date Ordered</th>
                         <th>Status</th>
                         <th>Update</th>
@@ -48,6 +48,7 @@
                     {% for orders in orders %}
                     <tr>
                         <td>{{orders.product}}</td>
+                        <td>{{orders.customer}}</td>
                         <td>{{orders.date_Created}}</td>
                         <td>{{orders.status}}</td>
                         <td><a href="{% url 'update_order' orders.id %}">Update</a></td>
