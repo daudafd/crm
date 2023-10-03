@@ -4,8 +4,11 @@ from django.forms import inlineformset_factory
 from django.contrib.auth.forms import UserCreationForm
 
 from django.contrib.auth import authenticate, login, logout
+
 from django.contrib import messages
+
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group
 
 from .models import *
 from .forms import OrderForm, CreateUserForm
@@ -14,21 +17,38 @@ from .decorators import unauthenticated_user, allowed_users, admin_only
 
 # Create your views here.
 
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
+from django.contrib.auth.models import Group
+from .models import Customer
+from .forms import CreateUserForm
+from .decorators import unauthenticated_user
+
+
 @unauthenticated_user
 def registerPage(request):
-    
-    form = CreateUserForm() 
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
         if form.is_valid():
-            form.save()
-            user = form.cleaned_data.get('username')
-            messages.success(request, 'Account created for ' + user + ' succesfully')
+            user = form.save()
+            username = form.cleaned_data.get('username')
 
+            group = Group.objects.get(name='customer')
+            user.groups.add(group)
+
+            Customer.objects.create(
+                user=user,
+            )
+
+            messages.success(request, 'Account created for ' + username + ' successfully')
             return redirect('login')
+    else:
+        form = CreateUserForm()
 
-        context = {'form':form}
-        return render(request, 'account/register.html', context)
+    context = {'form': form}
+    return render(request, 'account/register.html', context)
+
 
 @unauthenticated_user
 def loginPage(request):
@@ -75,9 +95,18 @@ def home(request):
     
     return render(request, 'account/dashboard.html', context)
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['customer'])
 def userPage(request):
+    orders = request.user.customer.order_set.all()
 
-    context = {}
+    total_orders = orders.count()
+    delivered = orders.filter(status='Delivered').count()
+    pending = orders.filter(status='Pending').count()
+    justout = orders.filter(status='Out for delivery').count()
+
+    context = {'orders':orders,'total_orders':total_orders,'delivered':delivered,
+               'pending':pending, 'justout':justout}
     return render(request, 'account/user.html', context)
 
 @login_required(login_url='login')
